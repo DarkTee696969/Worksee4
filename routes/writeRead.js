@@ -5,26 +5,37 @@ const crypto = require('crypto');
 const wrRoute = express.Router();
 const connection = require('../db');
 
+
+
 // Insert new user
 wrRoute.post('/users', function (req, res, next) {
-    let mypass = crypto.createHash('md5').update(req.body.password).digest("hex");
-    
-    connection.execute(
-        `INSERT INTO Users_tbl (name, tel, username, password, created_at, updated_at) 
-         VALUES (?, ?, ?, ?, NOW(), NOW());`,
-        [req.body.name, req.body.tel, req.body.username, mypass]
-    ).then(() => {
-        console.log('User inserted successfully');
-        res.status(201).send("Insert Successfully.");
-    }).catch((err) => {
+    const mypass = crypto.createHash('md5').update(req.body.password).digest("hex");
+
+    // Prepare the SQL query
+    const sql = `INSERT INTO profile (name, username, password, email, tel , position ,affiliation) VALUES (?, ?, ?, ?, ?, ?,?)`;
+
+    // Execute the query
+    connection.execute(sql, [
+        req.body.name, 
+        req.body.username, 
+        mypass , 
+        req.body.email, 
+        req.body.tel, 
+        req.body.position, 
+        req.body.affiliation
+    ])
+    .then(() => {
+        console.log('User added successfully');
+        res.status(201).send('User created');
+    })
+    .catch((err) => {
         console.error('Error inserting user:', err);
-        res.status(500).send("Error inserting user.");
+        res.status(500).send('Error creating user');
     });
 });
-
 // Get all users
 wrRoute.get('/users', function (req, res, next) {
-    connection.execute('SELECT * FROM Users_tbl;')
+    connection.execute('SELECT * FROM profile;')
         .then((result) => {
             var rawData = result[0];
             res.send(JSON.stringify(rawData));
@@ -34,8 +45,13 @@ wrRoute.get('/users', function (req, res, next) {
         });
 });
 
+
+
+
+
+
 // Check user credentials
-wrRoute.post('/check', function (req, res, next) {
+wrRoute.post('/users', function (req, res, next) {
     let mypass = crypto.createHash('md5').update(req.body.password).digest("hex");
     
     connection.execute('SELECT * FROM Users_tbl WHERE username=? AND password=?;',

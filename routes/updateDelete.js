@@ -1,23 +1,26 @@
-
 'use strict';
 
 const express = require('express');
 const udRoute = express.Router();
 const connection = require('../db');
 
+
 udRoute.put('/users/:uid', function (req, res, next) {
-    const { name, tel } = req.body;
+    const { name, username, password, email, tel, position, affiliation } = req.body;
     const { uid } = req.params;
 
     // Validate inputs
-    if (!name || !tel) {
-        console.error('Validation error: Name and telephone number are required.');
-        return res.status(400).send("Name and telephone number are required.");
+    if (!name || !password) { 
+        console.error('Validation error: Name and password are required.');
+        return res.status(400).send("Name and password are required.");
     }
 
+    // Encode the password in Base64
+    const encodedPassword = Buffer.from(password).toString('base64');
+
     connection.execute(
-        "UPDATE Users_tbl SET name=?, tel=?, updated_at=NOW() WHERE id=?;",
-        [name, tel, uid]
+        "UPDATE profile SET name=?, username=?, password=?, email=?, tel=?, position=?, affiliation=? WHERE id=?;",
+        [name, username, encodedPassword, email, tel, position, affiliation, uid]
     ).then(() => {
         console.log(`User with ID ${uid} updated successfully`);
         res.status(200).send("Update Successfully.");
@@ -27,11 +30,14 @@ udRoute.put('/users/:uid', function (req, res, next) {
     });
 });
 
+
+
+
 udRoute.delete('/users/:uid', function (req, res, next) {
     const { uid } = req.params;
 
     connection.execute(
-        "DELETE FROM Users_tbl WHERE id=?;",
+        "DELETE FROM profile WHERE id=?;",
         [uid]
     ).then(() => {
         console.log(`User with ID ${uid} deleted successfully`);
